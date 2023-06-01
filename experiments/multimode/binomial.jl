@@ -5,10 +5,10 @@ using HDF5
 
 
 
-const EXPERIMENT_NAME = "g0_to_g1"
+const EXPERIMENT_NAME = "binomial"
 
 const TRANSMON_LEVELS = 2
-const CAVITY_LEVELS = 14
+const CAVITY_LEVELS = 12
 
 function cavity_state(level)
     state = zeros(CAVITY_LEVELS)
@@ -17,7 +17,7 @@ function cavity_state(level)
 end
 #const TRANSMON_ID = I(TRANSMON_LEVELS)
 
-function run_solve(;iter = 3000, T = 1100,  Δt = 3., Q = 200., R = 0.1, hess = true, pinqstate = false, αval = 0.25, ub = 0.1)
+function run_solve(;iter = 3000, T = 1100,  Δt = 3., Q = 200., R = 0.1, hess = true, pinqstate = false, αval = 0.25, ub = 0.01)
 
     
     TRANSMON_G = [1; zeros(TRANSMON_LEVELS - 1)]
@@ -38,8 +38,9 @@ function run_solve(;iter = 3000, T = 1100,  Δt = 3., Q = 200., R = 0.1, hess = 
 
     H_drives = [transmon_driveR, transmon_driveI, cavity_driveR, cavity_driveI]
 
-    ψ1 = kron(TRANSMON_G, cavity_state(0))
-    ψf = kron(TRANSMON_G, cavity_state(2))
+    ψ1 = [kron(TRANSMON_G, cavity_state(0)), kron(TRANSMON_E, cavity_state(0))]
+
+    ψf = [(kron(TRANSMON_G, cavity_state(0)) + kron(TRANSMON_G, cavity_state(4)))/sqrt(2), kron(TRANSMON_G, cavity_state(2))]
 
     # bounds on controls
 
@@ -63,7 +64,7 @@ function run_solve(;iter = 3000, T = 1100,  Δt = 3., Q = 200., R = 0.1, hess = 
     options = Options(
         max_iter = iter,
         max_cpu_time = 80000.0,
-        tol = 1e-6
+        tol = 1e-5
     )
 
 
@@ -85,12 +86,12 @@ function run_solve(;iter = 3000, T = 1100,  Δt = 3., Q = 200., R = 0.1, hess = 
 
     cons = AbstractConstraint[u_bounds]
 
-    experiment = "g0_to_g1_T_$(T)_dt_$(Δt)_R_$(R)_iter_$(iter)" * (pin_first_qstate ? "_pinned" : "") * "ubound_$(ub)"
+    experiment = "binomial_T_$(T)_dt_$(Δt)_R_$(R)_iter_$(iter)" * (pin_first_qstate ? "_pinned" : "") * "ubound_$(ub)"
 
-    plot_dir = "plots/multimode/fermiumL1band"
+    plot_dir = "plots/multimode/binomial"
     data_dir = "data/multimode/fixed_time/no_guess/problems"
 
-    plot_path = generate_file_path("png", experiment, "plots/multimode/fermiumL1band/")
+    plot_path = generate_file_path("png", experiment, "plots/multimode/binomial/")
 
 
 
@@ -103,8 +104,8 @@ function run_solve(;iter = 3000, T = 1100,  Δt = 3., Q = 200., R = 0.1, hess = 
         pin_first_qstate=pin_first_qstate,
         options=options,
         cons = cons,
-        L1_regularized_states=[1,2,3,4] .* CAVITY_LEVELS,
-        α = fill(αval, 4)
+        L1_regularized_states=[1,2,3,4,5,6,7,8] .* CAVITY_LEVELS,
+        α = fill(αval, 8)
     )
     data_path = generate_file_path(
             "jld2",

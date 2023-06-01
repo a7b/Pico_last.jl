@@ -144,7 +144,8 @@ function QuantumSystem(
         control_bounds,
         ψ̃init,
         ψ̃goal,
-        ∫a
+        ∫a,
+        nothing
     )
 end
 
